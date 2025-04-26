@@ -20,15 +20,11 @@ else
     echo $YELLOW "APP_KEY is already set."
 fi
 
-php artisan package:discover --ansi
-php artisan filament:upgrade
-php artisan vendor:publish --tag=laravel-assets --force
-php artisan storage:link
-
 php artisan optimize:clear
 php artisan filament:optimize-clear
 php artisan optimize
 php artisan filament:optimize
+php artisan storage:link
 
 echo $YELLOW "Waiting for MySQL to be ready at mysql:3306..."
 # netcat-openbsd هست که چک میکنه آیا پورت باز است یا خیر
