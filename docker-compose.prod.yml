@@ -1,0 +1,61 @@
+services:
+
+    app:
+        container_name: app
+        build:
+            context: .
+            dockerfile: ./docker/production/Dockerfile
+        environment:
+            SSL_MODE: ${SSL_MODE:-full}
+            PHP_OPCACHE_ENABLE: ${PHP_OPCACHE_ENABLE:-1}
+        healthcheck:
+            test: [ "CMD", "curl", "--insecure", "--silent", "--location", "--show-error", "--fail", "http://localhost:8080" ]
+            retries: 5
+            timeout: 5s
+        ports:
+            - '${APP_PORT:-80}:8080'
+            - '${HTTPS_PORT:-443}:8443'
+        depends_on:
+            - redis
+            - mysql
+        restart: on-failure:10
+
+    mysql:
+        container_name: mysql
+        image: mysql:8.0
+        ports:
+            - '${FORWARD_DB_PORT:-3306}:3306'
+        healthcheck:
+            test: [ "CMD", "mysqladmin", "ping", "-p${DB_PASSWORD}" ]
+            retries: 3
+            timeout: 5s
+        volumes:
+            - 'mysql:/var/lib/mysql'
+        restart: on-failure:10
+
+    redis:
+        container_name: redis
+        image: 'redis:alpine'
+        ports:
+            - '${FORWARD_REDIS_PORT:-6379}:6379'
+        volumes:
+            - 'redis:/data'
+        healthcheck:
+            test: [ "CMD", "redis-cli", "ping" ]
+            retries: 3
+            timeout: 5s
+        restart: on-failure:10
+
+  #    uptime-kuma:
+  #        image: louislam/uptime-kuma:1
+  #        container_name: uptime-kuma
+  #        restart: always
+  #        ports:
+  #            - "3001:3001"
+  #        volumes:
+  #            - uptime-kuma:/app/data
+
+volumes:
+    mysql:
+    redis:
+#    uptime-kuma:
