@@ -7,11 +7,13 @@ RED='\033[0;31m'
 GREEN='\033[0;32m'
 YELLOW='\033[0;33m'
 
-if [ ! -f .env.prod ]; then
-    echo $RED ".env.prod file not found!"
-    exit 1
+if [ "$CONTAINER_NAME" = "app-dev" ]; then
+    cp .env.prod.dev .env
+    echo $GREEN ".env created from .env.prod.dev successfully"
+else
+    cp .env.prod .env
+    echo $GREEN ".env created from .env.prod successfully"
 fi
-cp .env.prod .env
 
 if ! grep -q '^APP_KEY=' .env || grep -q '^APP_KEY=$' .env; then
     php artisan key:generate

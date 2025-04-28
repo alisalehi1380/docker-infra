@@ -17,6 +17,7 @@ RUN composer install --no-plugins --no-scripts --no-interaction --no-progress --
 COPY --chmod=755 docker/production/entrypoint.d /etc/entrypoint.d
 COPY --chmod=755 docker/production/services /etc/services.d
 COPY --chown=www-data:www-data . .
+RUN chmod -R 755 /var/www/html
 
 RUN chmod +x /etc/services.d/*
 
@@ -45,9 +46,10 @@ LABEL email="alisalehi.dev@gmail.com"
 
 USER root
 
+# mariadb-client برای spatie-backup استفاده میشه
 RUN install-php-extensions intl \
   && apt-get update \
-  && apt-get install -y netcat-openbsd iputils-ping \
+  && apt-get install -y mariadb-client netcat-openbsd iputils-ping \
   && apt-get clean \
   && rm -rf /var/lib/apt/lists/*
 
@@ -60,8 +62,8 @@ COPY --from=base /etc/services.d /etc/services.d
 RUN composer dump-autoload
 
 # Configure shell aliases
-RUN echo "alias ll='ls -al'" >> /etc/profile && \
-    echo "alias a='php artisan'" >> /etc/profile && \
-    echo "alias logs='tail -f storage/logs/laravel.log'" >> /etc/profile
+RUN echo "alias ll='ls -al'" >> /etc/bash.bashrc && \
+    echo "alias a='php artisan'" >> /etc/bash.bashrc && \
+    echo "alias logs='tail -n 100 -f storage/logs/laravel.log'" >> /etc/bash.bashrc
 
 USER www-data

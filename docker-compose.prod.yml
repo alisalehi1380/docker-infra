@@ -6,6 +6,7 @@ services:
             context: .
             dockerfile: ./docker/production/Dockerfile
         environment:
+            CONTAINER_NAME: app
             SSL_MODE: ${SSL_MODE:-full}
             PHP_OPCACHE_ENABLE: ${PHP_OPCACHE_ENABLE:-1}
         healthcheck:
@@ -19,32 +20,35 @@ services:
             - redis
             - mysql
         restart: on-failure:10
+        volumes:
+            - './storage/app:/var/www/html/storage/app'
+            - './storage/logs:/var/www/html/storage/logs'
 
     mysql:
         container_name: mysql
         image: mysql:8.0
-        ports:
-            - '${FORWARD_DB_PORT:-3306}:3306'
+        expose:
+          - '3306'
         healthcheck:
-            test: [ "CMD", "mysqladmin", "ping", "-p${DB_PASSWORD}" ]
+            test: [ "CMD", "mysqladmin", "ping", "-p${DB_PASSWORD:-123}" ]
             retries: 3
             timeout: 5s
         volumes:
             - 'mysql:/var/lib/mysql'
-        restart: on-failure:10
+        restart: always
 
     redis:
         container_name: redis
         image: 'redis:alpine'
-        ports:
-            - '${FORWARD_REDIS_PORT:-6379}:6379'
+        expose:
+          - '6379'
         volumes:
             - 'redis:/data'
         healthcheck:
             test: [ "CMD", "redis-cli", "ping" ]
             retries: 3
             timeout: 5s
-        restart: on-failure:10
+        restart: always
 
   #    uptime-kuma:
   #        image: louislam/uptime-kuma:1
