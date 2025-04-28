@@ -29,7 +29,7 @@ services:
             timeout: 5s
         volumes:
             - 'mysql:/var/lib/mysql'
-        restart: on-failure:10
+        restart: always
 
     redis:
         container_name: redis
@@ -42,7 +42,7 @@ services:
             test: [ "CMD", "redis-cli", "ping" ]
             retries: 3
             timeout: 5s
-        restart: on-failure:10
+        restart: always
 
 volumes:
     mysql:
