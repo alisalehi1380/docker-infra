@@ -1,5 +1,5 @@
 ```
-docker build -f ./docker/Dockerfile . --no-cache
+docker build -f ./docker/production/Dockerfile . --no-cache
 ```
 
 ```
