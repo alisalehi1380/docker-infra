@@ -1,4 +1,4 @@
-#!/bin/bash
+#!/usr/bin/env bash
 set -e
 
 echo "Starting 11-setup-laravel.sh"
@@ -7,19 +7,11 @@ RED='\033[0;31m'
 GREEN='\033[0;32m'
 YELLOW='\033[0;33m'
 
-if [ "$CONTAINER_NAME" = "app-dev" ]; then
-    cp .env.prod.dev .env
+cp .env.prod .env
+if [ $? -eq 0 ]; then
     echo $GREEN ".env created from .env.prod.dev successfully"
 else
-    cp .env.prod .env
-    echo $GREEN ".env created from .env.prod successfully"
-fi
-
-if ! grep -q '^APP_KEY=' .env || grep -q '^APP_KEY=$' .env; then
-    php artisan key:generate
-    echo $GREEN "Generating Laravel application key successfully"
-else
-    echo $YELLOW "APP_KEY is already set."
+    echo $RED "Failed to create .env from .env.prod"
 fi
 
 php artisan optimize:clear
