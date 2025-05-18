@@ -1,65 +1,68 @@
 services:
 
-    app:
-        container_name: app
-        build:
-            context: .
-            dockerfile: ./docker/production/Dockerfile
-        environment:
-            CONTAINER_NAME: app
-            SSL_MODE: ${SSL_MODE:-full}
-            PHP_OPCACHE_ENABLE: ${PHP_OPCACHE_ENABLE:-1}
-        healthcheck:
-            test: [ "CMD", "curl", "--insecure", "--silent", "--location", "--show-error", "--fail", "http://localhost:8080" ]
-            retries: 5
-            timeout: 5s
-        ports:
-            - '${APP_PORT:-80}:8080'
-            - '${HTTPS_PORT:-443}:8443'
-        depends_on:
-            - redis
-            - mysql
-        restart: on-failure:10
-        volumes:
-            - './storage/app:/var/www/html/storage/app'
-            - './storage/logs:/var/www/html/storage/logs'
+  app:
+    container_name: app
+    restart: on-failure:10
+    build:
+      context: .
+      dockerfile: ./docker/Dockerfile
+      target: production
+    environment:
+      PHP_OPCACHE_ENABLE: ${PHP_OPCACHE_ENABLE:-1}
+    healthcheck:
+      test: [ "CMD", "curl", "--insecure", "--silent", "--location", "--show-error", "--fail", "http://localhost:8080" ]
+      retries: 5
+      timeout: 5s
+    ports:
+      - ${APP_PORT:-80}:8080
+#      - ${HTTPS_PORT:-443}:8443
+    volumes:
+      - ./storage/app:/var/www/html/storage/app
+      - ./storage/logs:/var/www/html/storage/logs
+    depends_on:
+      - redis
+      - mysql
 
-    mysql:
-        container_name: mysql
-        image: mysql:8.0
-        expose:
-          - '3306'
-        healthcheck:
-            test: [ "CMD", "mysqladmin", "ping", "-p${DB_PASSWORD:-123}" ]
-            retries: 3
-            timeout: 5s
-        volumes:
-            - 'mysql:/var/lib/mysql'
-        restart: always
+  mysql:
+    container_name: mysql
+    image: mysql:8.0
+    restart: always
+    env_file: .env.prod
+    expose:
+      - 3306
+    healthcheck:
+      test: [ "CMD", "mysqladmin", "ping", "-p${DB_PASSWORD}" ]
+      retries: 3
+      timeout: 5s
+    volumes:
+      - mysql:/var/lib/mysql
+      - ./docker/logs/mysql:/var/log/mysql
 
-    redis:
-        container_name: redis
-        image: 'redis:alpine'
-        expose:
-          - '6379'
-        volumes:
-            - 'redis:/data'
-        healthcheck:
-            test: [ "CMD", "redis-cli", "ping" ]
-            retries: 3
-            timeout: 5s
-        restart: always
+#  phpmyadmin:
+#    image: phpmyadmin/phpmyadmin
+#    container_name: phpmyadmin
+#    env_file: .env.prod
+#    ports:
+#      - 81:80
+#    environment:
+#      PMA_HOST: ${DB_HOST}
+#      PMA_USER: ${DB_USERNAME}
+#      PMA_PASSWORD: ${DB_PASSWORD}
+#    depends_on:
+#      - mysql
 
-  #    uptime-kuma:
-  #        image: louislam/uptime-kuma:1
-  #        container_name: uptime-kuma
-  #        restart: always
-  #        ports:
-  #            - "3001:3001"
-  #        volumes:
-  #            - uptime-kuma:/app/data
+  redis:
+    container_name: redis
+    image: redis:alpine
+    expose:
+      - 6379
+    volumes:
+      - redis:/data
+    healthcheck:
+      test: [ "CMD", "redis-cli", "ping" ]
+      retries: 3
+      timeout: 5s
 
 volumes:
-    mysql:
-    redis:
-#    uptime-kuma:
+  mysql:
+  redis:

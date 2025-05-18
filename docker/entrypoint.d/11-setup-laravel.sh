@@ -8,7 +8,7 @@ GREEN='\033[0;32m'
 YELLOW='\033[0;33m'
 
 if cp .env.prod .env; then
-    echo $GREEN ".env created from .env.prod.dev successfully"
+    echo $GREEN ".env created from .env.prod successfully"
 else
     echo $RED "Failed to create .env from .env.prod"
     exit 1
