@@ -1,47 +1,60 @@
 services:
 
-  app.dev:
-    container_name: app.dev
-    restart: unless-stopped
-    build:
-      context: .
-      dockerfile: ./docker/Dockerfile
-      target: development
-    ports:
-      - ${APP_PORT:-80}:8080
-    volumes:
-      - ./:/var/www/html
-    depends_on:
-      - redis
-      - mysql
+    app-dev:
+        build:
+            context: .
+            dockerfile: ./docker/Dockerfile
+            target: development
+        ports:
+            - "${APP_PORT:-80}:8080"
+        volumes:
+            - ./:/var/www/html
+        depends_on:
+            - redis
+            - mysql
+        restart: unless-stopped
 
-  mysql:
-    container_name: mysql
-    image: mysql:8.0
-    restart: unless-stopped
-    ports:
-      - 3306:3306
-    healthcheck:
-      test: [ "CMD", "mysqladmin", "ping", "-p${DB_PASSWORD}" ]
-      retries: 3
-      timeout: 5s
-    volumes:
-      - mysql:/var/lib/mysql
-      - ./docker/logs/mysql:/var/log/mysql
+    mysql:
+        image: mysql:8.0
+        environment:
+            MYSQL_ROOT_PASSWORD: "${DB_PASSWORD}"
+            MYSQL_DATABASE: "${DB_DATABASE}"
+            MYSQL_ALLOW_EMPTY_PASSWORD: 1
+        ports:
+            - "${DB_PORT:-3306}:3306"
+        healthcheck:
+            test: [ "CMD", "mysqladmin", "ping", "-p${DB_PASSWORD}" ]
+            retries: 3
+            timeout: 5s
+        volumes:
+            - mysql:/var/lib/mysql
+            - ./docker/logs/mysql:/var/log/mysql
+        restart: unless-stopped
 
-  redis:
-    container_name: redis
-    image: redis:alpine
-    restart: unless-stopped
-    ports:
-      - 6379:6379
-    volumes:
-      - redis:/data
-    healthcheck:
-      test: [ "CMD", "redis-cli", "ping" ]
-      retries: 3
-      timeout: 5s
+    redis:
+        image: redis:alpine
+        ports:
+            - "${REDIS_PORT:-6379}:6379"
+        volumes:
+            - redis:/data
+        healthcheck:
+            test: [ "CMD", "redis-cli", "ping" ]
+            retries: 3
+            timeout: 5s
+        restart: unless-stopped
+
+#    pma:
+#        image: phpmyadmin/phpmyadmin
+#        ports:
+#            - "${PMA_PORT:-81}:80"
+#        environment:
+#            PMA_HOST: "${DB_HOST}"
+#            PMA_USER: "${DB_USERNAME}"
+#            PMA_PASSWORD: "${DB_PASSWORD}"
+#        depends_on:
+#            - mysql
+#        restart: unless-stopped
 
 volumes:
-  mysql:
-  redis:
+    mysql:
+    redis:
