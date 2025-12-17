@@ -1,33 +1,48 @@
 services:
-
   app:
     container_name: app
-    restart: on-failure:10
+    image: ${REGISTRY}/afarinesh
     build:
       context: .
       dockerfile: ./docker/Dockerfile
       target: production
+      args:
+        REGISTRY: ${REGISTRY}
     environment:
+      SSL_MODE: "full"
       PHP_OPCACHE_ENABLE: ${PHP_OPCACHE_ENABLE:-1}
+      PHP_MEMORY_LIMIT: ${PHP_MEMORY_LIMIT:-2G}
+      SSL_PRIVATE_KEY_FILE: "/etc/ssl/private/privkey.pem"
+      SSL_CERTIFICATE_FILE: "/etc/ssl/private/fullchain.pem"
+      APP_BASE_DIR: ${APP_BASE_DIR}
+      NGINX_WEBROOT: ${NGINX_WEBROOT}
+      UNIT_WEBROOT: ${UNIT_WEBROOT}
     healthcheck:
-      test: [ "CMD", "curl", "--insecure", "--silent", "--location", "--show-error", "--fail", "http://localhost:8080" ]
+      test: [ "CMD", "curl", "--insecure", "--silent", "--location", "--show-error", "--fail", "http://localhost" ]
       retries: 5
       timeout: 5s
     ports:
-      - ${APP_PORT:-80}:8080
-#      - ${HTTPS_PORT:-443}:8443
+      - ${HTTPS_PORT:-443}:8443
     volumes:
       - ./storage/app:/var/www/html/storage/app
       - ./storage/logs:/var/www/html/storage/logs
+      - ./docker/logs/nginx:/var/log/nginx
+      - ./.env:/var/www/html/.env
+      - ./docker/certs/privkey.pem:/etc/ssl/private/privkey.pem:ro
+      - ./docker/certs/fullchain.pem:/etc/ssl/private/fullchain.pem:ro
     depends_on:
       - redis
       - mysql
+    restart: on-failure:10
 
   mysql:
     container_name: mysql
-    image: mysql:8.0
-    restart: always
-    env_file: .env.prod
+    image: ${REGISTRY}/mysql:8.0
+    environment:
+      MYSQL_DATABASE: ${DB_DATABASE}
+      MYSQL_USER: ${DB_USERNAME}
+      MYSQL_PASSWORD: ${DB_PASSWORD}
+      MYSQL_ROOT_PASSWORD: ${DB_PASSWORD}
     expose:
       - 3306
     healthcheck:
@@ -37,23 +52,22 @@ services:
     volumes:
       - mysql:/var/lib/mysql
       - ./docker/logs/mysql:/var/log/mysql
+    restart: unless-stopped
 
-#  phpmyadmin:
-#    image: phpmyadmin/phpmyadmin
-#    container_name: phpmyadmin
-#    env_file: .env.prod
-#    ports:
-#      - 81:80
-#    environment:
-#      PMA_HOST: ${DB_HOST}
-#      PMA_USER: ${DB_USERNAME}
-#      PMA_PASSWORD: ${DB_PASSWORD}
-#    depends_on:
-#      - mysql
+  phpmyadmin:
+    image: ${REGISTRY}/phpmyadmin:5.2.2
+    container_name: pma
+    ports:
+      - ${PMA_PORT:-81}:80
+    environment:
+      PMA_ARBITRARY: 1
+    depends_on:
+      - mysql
+    restart: on-failure:10
 
   redis:
     container_name: redis
-    image: redis:alpine
+    image: ${REGISTRY}/redis:7.4.5-alpine
     expose:
       - 6379
     volumes:
@@ -62,6 +76,7 @@ services:
       test: [ "CMD", "redis-cli", "ping" ]
       retries: 3
       timeout: 5s
+    restart: unless-stopped
 
 volumes:
   mysql:
